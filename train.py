@@ -11,6 +11,7 @@
 
 import os
 import torch
+import torchvision
 from random import randint
 from utils.loss_utils import l1_loss, ssim
 from gaussian_renderer import render, network_gui
@@ -111,13 +112,15 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         render_pkg = render(viewpoint_cam, gaussians, pipe, bg, use_trained_exp=dataset.train_test_exp, separate_sh=SPARSE_ADAM_AVAILABLE)
         image, viewspace_point_tensor, visibility_filter, radii = render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"]
 
-        if viewpoint_cam.alpha_mask is not None:
-            alpha_mask = viewpoint_cam.alpha_mask.cuda()
-            image *= alpha_mask
+        # if viewpoint_cam.alpha_mask is not None:
+        #     alpha_mask = viewpoint_cam.alpha_mask.cuda()
+        #     image *= alpha_mask
 
         # Loss
         gt_image = viewpoint_cam.original_image.cuda()
         Ll1 = l1_loss(image, gt_image)
+        #TODO:save image
+        
         if FUSED_SSIM_AVAILABLE:
             ssim_value = fused_ssim(image.unsqueeze(0), gt_image.unsqueeze(0))
         else:
@@ -149,13 +152,13 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             ema_Ll1depth_for_log = 0.4 * Ll1depth + 0.6 * ema_Ll1depth_for_log
 
             if iteration % 10 == 0:
-                progress_bar.set_postfix({"Loss": f"{ema_loss_for_log:.{7}f}", "Depth Loss": f"{ema_Ll1depth_for_log:.{7}f}"})
+                progress_bar.set_postfix({"Loss": f"{ema_loss_for_log:.{7}f}", "Depth Loss": f"{ema_Ll1depth_for_log:.{7}f}", "Gaussian Number":len(gaussians._xyz)})
                 progress_bar.update(10)
             if iteration == opt.iterations:
                 progress_bar.close()
 
             # Log and save
-            training_report(tb_writer, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, scene, render, (pipe, background, dataset.train_test_exp, SPARSE_ADAM_AVAILABLE), dataset.train_test_exp)
+            training_report(tb_writer, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, scene, render, {'pipe':pipe, 'bg_color':background, 'use_trained_exp': dataset.train_test_exp, 'separate_sh':SPARSE_ADAM_AVAILABLE}, dataset.train_test_exp)
             if (iteration in saving_iterations):
                 print("\n[ITER {}] Saving Gaussians".format(iteration))
                 scene.save(iteration)
@@ -168,7 +171,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
                 if iteration > opt.densify_from_iter and iteration % opt.densification_interval == 0:
                     size_threshold = 20 if iteration > opt.opacity_reset_interval else None
-                    gaussians.densify_and_prune(opt.densify_grad_threshold, 0.005, scene.cameras_extent, size_threshold, radii)
+                    gaussians.densify_and_prune(opt.densify_grad_threshold, 0.015, scene.cameras_extent, size_threshold, radii)
                 
                 if iteration % opt.opacity_reset_interval == 0 or (dataset.white_background and iteration == opt.densify_from_iter):
                     gaussians.reset_opacity()
@@ -228,8 +231,12 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
                 l1_test = 0.0
                 psnr_test = 0.0
                 for idx, viewpoint in enumerate(config['cameras']):
-                    image = torch.clamp(renderFunc(viewpoint, scene.gaussians, *renderArgs)["render"], 0.0, 1.0)
+                    image = torch.clamp(renderFunc(viewpoint, scene.gaussians, **renderArgs)["render"], 0.0, 1.0)
                     gt_image = torch.clamp(viewpoint.original_image.to("cuda"), 0.0, 1.0)
+
+                    torchvision.utils.save_image(image, os.path.join('./output/report/renders', '{0:05d}'.format(idx) + ".png"))
+                    torchvision.utils.save_image(gt_image, os.path.join('./output/report/gt', '{0:05d}'.format(idx) + ".png"))
+
                     if train_test_exp:
                         image = image[..., image.shape[-1] // 2:]
                         gt_image = gt_image[..., gt_image.shape[-1] // 2:]
@@ -261,7 +268,7 @@ if __name__ == "__main__":
     parser.add_argument('--port', type=int, default=6009)
     parser.add_argument('--debug_from', type=int, default=-1)
     parser.add_argument('--detect_anomaly', action='store_true', default=False)
-    parser.add_argument("--test_iterations", nargs="+", type=int, default=[7_000, 30_000])
+    parser.add_argument("--test_iterations", nargs="+", type=int, default=[100, 7_000, 15_000, 30_000])
     parser.add_argument("--save_iterations", nargs="+", type=int, default=[7_000, 30_000])
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument('--disable_viewer', action='store_true', default=False)

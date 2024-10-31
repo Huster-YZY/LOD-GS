@@ -38,6 +38,8 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
         rendering = render(view, gaussians, pipeline, background, use_trained_exp=train_test_exp, separate_sh=separate_sh)["render"]
         gt = view.original_image[0:3, :, :]
 
+        # rendering *= view.alpha_mask
+
         if args.train_test_exp:
             rendering = rendering[..., rendering.shape[-1] // 2:]
             gt = gt[..., gt.shape[-1] // 2:]
