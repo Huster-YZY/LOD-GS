@@ -1,4 +1,6 @@
 *.pyc
+*.zip
+SIBR_viewers/src/
 .vscode
 output
 build
