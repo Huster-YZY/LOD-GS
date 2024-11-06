@@ -13,7 +13,7 @@ import os
 import torch
 import torchvision
 from random import randint
-from utils.loss_utils import l1_loss, ssim
+from utils.loss_utils import l1_loss, ssim, l1_loss_map, weighted_l1_loss
 from gaussian_renderer import render, network_gui
 import sys
 from scene import Scene, GaussianModel
@@ -118,8 +118,13 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
         # Loss
         gt_image = viewpoint_cam.original_image.cuda()
-        Ll1 = l1_loss(image, gt_image)
-        #TODO:save image
+
+        #Ll1 = l1_loss(image, gt_image)
+        loss_map = l1_loss_map(image, gt_image)
+        weight_map = torch.softmax(loss_map.view(-1), dim=0).view(loss_map.shape)
+        Ll1 = weighted_l1_loss(image, gt_image, weight_map)
+
+        
         
         if FUSED_SSIM_AVAILABLE:
             ssim_value = fused_ssim(image.unsqueeze(0), gt_image.unsqueeze(0))

@@ -18,20 +18,23 @@ from utils.loss_utils import ssim
 from lpipsPyTorch import lpips
 import json
 from tqdm import tqdm
-from utils.image_utils import psnr
+from utils.image_utils import psnr, psnr_mask
 from argparse import ArgumentParser
 
-def readImages(renders_dir, gt_dir):
+def readImages(renders_dir, gt_dir, masks_dir):
     renders = []
     gts = []
+    masks = []
     image_names = []
     for fname in os.listdir(renders_dir):
         render = Image.open(renders_dir / fname)
         gt = Image.open(gt_dir / fname)
+        mask = Image.open(masks_dir/fname)
         renders.append(tf.to_tensor(render).unsqueeze(0)[:, :3, :, :].cuda())
         gts.append(tf.to_tensor(gt).unsqueeze(0)[:, :3, :, :].cuda())
+        masks.append(tf.to_tensor(mask).unsqueeze(0).cuda())
         image_names.append(fname)
-    return renders, gts, image_names
+    return renders, gts, masks, image_names
 
 def evaluate(model_paths):
 
@@ -62,27 +65,33 @@ def evaluate(model_paths):
                 method_dir = test_dir / method
                 gt_dir = method_dir/ "gt"
                 renders_dir = method_dir / "renders"
-                renders, gts, image_names = readImages(renders_dir, gt_dir)
+                masks_dir = method_dir / "masks"
+                renders, gts, masks, image_names = readImages(renders_dir, gt_dir, masks_dir)
 
                 ssims = []
                 psnrs = []
                 lpipss = []
+                psnr_masks = []
 
                 for idx in tqdm(range(len(renders)), desc="Metric evaluation progress"):
                     ssims.append(ssim(renders[idx], gts[idx]))
                     psnrs.append(psnr(renders[idx], gts[idx]))
                     lpipss.append(lpips(renders[idx], gts[idx], net_type='vgg'))
+                    psnr_masks.append(psnr_mask(renders[idx],gts[idx],masks[idx]))
 
                 print("  SSIM : {:>12.7f}".format(torch.tensor(ssims).mean(), ".5"))
                 print("  PSNR : {:>12.7f}".format(torch.tensor(psnrs).mean(), ".5"))
+                print("  Masked PSNR: {:>12.7f}".format(torch.tensor(psnr_masks).mean(), ".5"))
                 print("  LPIPS: {:>12.7f}".format(torch.tensor(lpipss).mean(), ".5"))
                 print("")
 
                 full_dict[scene_dir][method].update({"SSIM": torch.tensor(ssims).mean().item(),
                                                         "PSNR": torch.tensor(psnrs).mean().item(),
+                                                        "Masked PSNR": torch.tensor(psnr_masks).mean().item(),
                                                         "LPIPS": torch.tensor(lpipss).mean().item()})
                 per_view_dict[scene_dir][method].update({"SSIM": {name: ssim for ssim, name in zip(torch.tensor(ssims).tolist(), image_names)},
                                                             "PSNR": {name: psnr for psnr, name in zip(torch.tensor(psnrs).tolist(), image_names)},
+                                                            "Masked PSNR": {name: psnr for psnr, name in zip(torch.tensor(psnr_masks).tolist(), image_names)},
                                                             "LPIPS": {name: lp for lp, name in zip(torch.tensor(lpipss).tolist(), image_names)}})
 
             with open(scene_dir + "/results.json", 'w') as fp:

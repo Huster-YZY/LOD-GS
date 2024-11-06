@@ -20,7 +20,7 @@ class Camera(nn.Module):
     def __init__(self, resolution, colmap_id, R, T, FoVx, FoVy, depth_params, image, invdepthmap,
                  image_name, uid,
                  trans=np.array([0.0, 0.0, 0.0]), scale=1.0, data_device = "cuda",
-                 train_test_exp = False, is_test_dataset = False, is_test_view = False
+                 train_test_exp = False, is_test_dataset = False, is_test_view = False, white_background = False
                  ):
         super(Camera, self).__init__()
 
@@ -40,10 +40,14 @@ class Camera(nn.Module):
             self.data_device = torch.device("cuda")
 
         resized_image_rgb = PILtoTorch(image, resolution)
-        gt_image = resized_image_rgb[:3, ...]
+        gt_image = resized_image_rgb[:3, ...].to(self.data_device)
         self.alpha_mask = None
         if resized_image_rgb.shape[0] == 4:
             self.alpha_mask = resized_image_rgb[3:4, ...].to(self.data_device)
+            bg_color = [1, 1, 1] if white_background else [0, 0, 0]
+            background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
+            gt_image = gt_image * self.alpha_mask + background.view(3,1,1) * (1 - self.alpha_mask)
+            self.psnr_mask = (self.alpha_mask > 0).float().to("cuda")
         else: 
             self.alpha_mask = torch.ones_like(resized_image_rgb[0:1, ...].to(self.data_device))
 
