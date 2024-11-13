@@ -116,13 +116,18 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         #     alpha_mask = viewpoint_cam.alpha_mask.cuda()
         #     image *= alpha_mask
 
+        imp_tuning_iteration = 7000
+
         # Loss
         gt_image = viewpoint_cam.original_image.cuda()
 
-        #Ll1 = l1_loss(image, gt_image)
-        loss_map = l1_loss_map(image, gt_image)
-        weight_map = torch.softmax(loss_map.view(-1), dim=0).view(loss_map.shape)
-        Ll1 = weighted_l1_loss(image, gt_image, weight_map)
+        if iteration < imp_tuning_iteration:
+            Ll1 = l1_loss(image, gt_image)
+        else:
+            #@Zhenya: Self awared loss
+            loss_map = l1_loss_map(image, gt_image)
+            weight_map = torch.softmax(loss_map.view(-1), dim=0).view(loss_map.shape)
+            Ll1 = weighted_l1_loss(image, gt_image, weight_map)
 
         
         
