@@ -88,9 +88,7 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
 
     #TODO: opacity LOD control
     _, pt_depths = get_gt_depths(means3D, raster_settings.viewmatrix, raster_settings.projmatrix)
-    print(pt_depths.shape)
-    # opacity_final = torch.zeros_like(opacity)
-    # opacity_final = pc.LOD_control(pt_depths)
+    opacity_final = pc.LOD_control(pt_depths)
 
     # Rasterize visible Gaussians to image, obtain their radii (on screen). 
     if separate_sh:
@@ -100,7 +98,7 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
             dc = dc,
             shs = shs,
             colors_precomp = colors_precomp,
-            opacities = opacity,
+            opacities = opacity_final,
             scales = scales,
             rotations = rotations,
             cov3D_precomp = cov3D_precomp)
@@ -110,7 +108,7 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
             means2D = means2D,
             shs = shs,
             colors_precomp = colors_precomp,
-            opacities = opacity,
+            opacities = opacity_final,
             scales = scales,
             rotations = rotations,
             cov3D_precomp = cov3D_precomp)

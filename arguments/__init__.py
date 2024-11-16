@@ -78,6 +78,9 @@ class OptimizationParams(ParamGroup):
         self.position_lr_final = 0.0000016
         self.position_lr_delay_mult = 0.01
         self.position_lr_max_steps = 30_000
+        self.gmm_lr_init = 0.00016
+        self.gmm_lr_final = 0.000016
+        self.gmm_lr_delay_mult = 0.01
         self.feature_lr = 0.0025
         self.opacity_lr = 0.025
         self.scaling_lr = 0.005
@@ -120,3 +123,22 @@ def get_combined_args(parser : ArgumentParser):
         if v != None:
             merged_dict[k] = v
     return Namespace(**merged_dict)
+
+
+class GMMParams(ParamGroup):
+    def __init__(self, parser):
+        self.net_width = 64
+        self.timebase_pe = 4
+        self.defor_depth = 1
+        self.posebase_pe = 10
+        self.scale_rotation_pe = 2
+        self.opacity_pe = 2
+        self.timenet_width = 64
+        self.timenet_output = 32
+        self.bounds = 1.6  
+
+        self.ch_num = 1
+        self.curve_num = 10
+        self.init_param = 0.01
+        
+        super().__init__(parser, "GMMParams")
