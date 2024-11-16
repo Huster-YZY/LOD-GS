@@ -11,7 +11,7 @@
 
 import torch
 import math
-from diff_gaussian_rasterization import GaussianRasterizationSettings, GaussianRasterizer
+from diff_gaussian_rasterization import GaussianRasterizationSettings, GaussianRasterizer, get_gt_depths
 from scene.gaussian_model import GaussianModel
 from utils.sh_utils import eval_sh
 
@@ -85,6 +85,12 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
                 shs = pc.get_features
     else:
         colors_precomp = override_color
+
+    #TODO: opacity LOD control
+    _, pt_depths = get_gt_depths(means3D, raster_settings.viewmatrix, raster_settings.projmatrix)
+    print(pt_depths.shape)
+    # opacity_final = torch.zeros_like(opacity)
+    # opacity_final = pc.LOD_control(pt_depths)
 
     # Rasterize visible Gaussians to image, obtain their radii (on screen). 
     if separate_sh:

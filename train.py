@@ -116,7 +116,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         #     alpha_mask = viewpoint_cam.alpha_mask.cuda()
         #     image *= alpha_mask
 
-        imp_tuning_iteration = 7000
+        imp_tuning_iteration = 0
 
         # Loss
         gt_image = viewpoint_cam.original_image.cuda()
