@@ -15,7 +15,7 @@ from diff_gaussian_rasterization import GaussianRasterizationSettings, GaussianR
 from scene.gaussian_model import GaussianModel
 from utils.sh_utils import eval_sh
 
-def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, scaling_modifier = 1.0, separate_sh = False, override_color = None, use_trained_exp=False):
+def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, scaling_modifier = 1.0, separate_sh = False, override_color = None, use_trained_exp=False, LOD = True):
     """
     Render the scene. 
     
@@ -87,8 +87,12 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
         colors_precomp = override_color
 
     #TODO: opacity LOD control
-    _, pt_depths = get_gt_depths(means3D, raster_settings.viewmatrix, raster_settings.projmatrix)
-    opacity_final = pc.LOD_control(pt_depths)
+    if LOD:
+        _, pt_depths = get_gt_depths(means3D, raster_settings.viewmatrix, raster_settings.projmatrix)
+        opacity_final, scales_final = pc.LOD_control(pt_depths)
+    else:
+        opacity_final = pc.get_opacity
+        scales_final = scales
 
     # Rasterize visible Gaussians to image, obtain their radii (on screen). 
     if separate_sh:
@@ -99,7 +103,7 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
             shs = shs,
             colors_precomp = colors_precomp,
             opacities = opacity_final,
-            scales = scales,
+            scales = scales_final,
             rotations = rotations,
             cov3D_precomp = cov3D_precomp)
     else:
@@ -109,7 +113,7 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
             shs = shs,
             colors_precomp = colors_precomp,
             opacities = opacity_final,
-            scales = scales,
+            scales = scales_final,
             rotations = rotations,
             cov3D_precomp = cov3D_precomp)
         
