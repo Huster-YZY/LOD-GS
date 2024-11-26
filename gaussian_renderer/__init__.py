@@ -70,7 +70,6 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     # If precomputed colors are provided, use them. Otherwise, if it is desired to precompute colors
     # from SHs in Python, do it. If not, then SH -> RGB conversion will be done by rasterizer.
     shs = None
-    alpha_shs = None
     colors_precomp = None
     if override_color is None:
         if pipe.convert_SHs_python:
@@ -84,14 +83,15 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
                 dc, shs = pc.get_features_dc, pc.get_features_rest
             else:
                 shs = pc.get_features
-                alpha_shs = pc.get_alpha_features
     else:
         colors_precomp = override_color
 
     #TODO: opacity LOD control
     if LOD:
         _, pt_depths = get_gt_depths(means3D, raster_settings.viewmatrix, raster_settings.projmatrix)
-        opacity_final, scales_final = pc.LOD_control(pt_depths)
+        dir_pp = (pc.get_xyz - viewpoint_camera.camera_center.repeat(pc.get_features.shape[0], 1))
+        dir_pp_normalized = dir_pp/dir_pp.norm(dim=1, keepdim=True)
+        opacity_final, scales_final = pc.LOD_control(pt_depths, dir_pp_normalized)
     else:
         opacity_final = pc.get_opacity
         scales_final = scales
@@ -103,7 +103,6 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
             means2D = means2D,
             dc = dc,
             shs = shs,
-            alpha_shs = alpha_shs,
             colors_precomp = colors_precomp,
             opacities = opacity_final,
             scales = scales_final,
@@ -114,7 +113,6 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
             means3D = means3D,
             means2D = means2D,
             shs = shs,
-            alpha_shs = alpha_shs,
             colors_precomp = colors_precomp,
             opacities = opacity_final,
             scales = scales_final,

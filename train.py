@@ -172,7 +172,7 @@ def training(dataset, gmm_args, opt, pipe, testing_iterations, saving_iterations
                 progress_bar.close()
 
             # Log and save
-            training_report(tb_writer, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, scene, render, {'pipe':pipe, 'bg_color':background, 'use_trained_exp': dataset.train_test_exp, 'separate_sh':SPARSE_ADAM_AVAILABLE}, dataset.train_test_exp)
+            training_report(tb_writer, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, scene, render, {'pipe':pipe, 'bg_color':background, 'use_trained_exp': dataset.train_test_exp, 'separate_sh':SPARSE_ADAM_AVAILABLE, 'LOD':USE_LOD}, dataset.train_test_exp)
             if (iteration in saving_iterations):
                 print("\n[ITER {}] Saving Gaussians".format(iteration))
                 scene.save(iteration)

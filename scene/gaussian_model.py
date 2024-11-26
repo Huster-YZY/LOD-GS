@@ -17,7 +17,7 @@ import os
 import json
 from utils.system_utils import mkdir_p
 from plyfile import PlyData, PlyElement
-from utils.sh_utils import RGB2SH
+from utils.sh_utils import RGB2SH, eval_sh
 from simple_knn._C import distCUDA2
 from utils.graphics_utils import BasicPointCloud
 from utils.general_utils import strip_symmetric, build_scaling_rotation
@@ -178,10 +178,11 @@ class GaussianModel:
         gaussian =  torch.exp(-exponent**2)         
         return (gaussian*weight).sum(-1).squeeze(-1)
 
-    def LOD_control(self, points_depths):
+    def LOD_control(self, points_depths, dirs):
         LOD_offset = self.LOD_offset(points_depths)
-        opacity_final = self.opacity_activation(self._opacity + LOD_offset[:,:1])
-        scales_final = self.scaling_activation(self._scaling + LOD_offset[:,1:])
+        view_offset = eval_sh(deg = self.active_sh_degree, sh = self.get_alpha_features.transpose(1,2), dirs = dirs)
+        opacity_final = self.opacity_activation(self._opacity + LOD_offset[:,:1] + view_offset) #TIPS: view offset inner or outter??
+        scales_final = self.scaling_activation(self._scaling + LOD_offset[:,1:]) #TIPS: multi channel for scaling offset?
         return opacity_final, scales_final
 
     def create_from_pcd(self, pcd : BasicPointCloud, cam_infos : int, spatial_lr_scale : float):
@@ -366,7 +367,7 @@ class GaussianModel:
 
         alpha_extra_f_names = [p.name for p in plydata.elements[0].properties if p.name.startswith("f_alpha_rest_")]
         alpha_extra_f_names = sorted(alpha_extra_f_names, key = lambda x: int(x.split('_')[-1]))
-        assert len(alpha_extra_f_names)==3*(self.max_sh_degree + 1) ** 2 - 3
+        assert len(alpha_extra_f_names)==(self.max_sh_degree + 1) ** 2 - 1
         alpha_features_extra = np.zeros((xyz.shape[0], len(alpha_extra_f_names)))
         for idx, attr_name in enumerate(alpha_extra_f_names):
             alpha_features_extra[:, idx] = np.asarray(plydata.elements[0][attr_name])
