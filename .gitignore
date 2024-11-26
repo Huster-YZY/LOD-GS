@@ -1,5 +1,6 @@
 *.pyc
 *.zip
+*.txt
 SIBR_viewers/src/
 .vscode
 output
