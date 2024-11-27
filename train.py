@@ -111,7 +111,7 @@ def training(dataset, gmm_args, opt, pipe, testing_iterations, saving_iterations
 
         LOD_tuning_iteration = 7000
         USE_LOD = True
-        if iteration < LOD_tuning_iteration:
+        if iteration <= LOD_tuning_iteration:
             USE_LOD = False
         render_pkg = render(viewpoint_cam, gaussians, pipe, bg, use_trained_exp=dataset.train_test_exp, separate_sh=SPARSE_ADAM_AVAILABLE, LOD = USE_LOD)
         image, viewspace_point_tensor, visibility_filter, radii = render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"]
