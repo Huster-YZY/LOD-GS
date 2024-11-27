@@ -178,11 +178,14 @@ class GaussianModel:
         gaussian =  torch.exp(-exponent**2)         
         return (gaussian*weight).sum(-1).squeeze(-1)
 
-    def LOD_control(self, points_depths, dirs):
+    def LOD_control(self, points_depths, dirs, use_view_offset = True):
         LOD_offset = self.LOD_offset(points_depths)
-        view_offset = eval_sh(deg = self.active_sh_degree, sh = self.get_alpha_features.transpose(1,2), dirs = dirs)
-        opacity_final = self.opacity_activation(self._opacity + LOD_offset[:,:1] + view_offset[:,:1])
-        scales_final = self.scaling_activation(self._scaling + LOD_offset[:,1:] + 0.5 * view_offset[:,1:]) #hyper-parameter control
+        if use_view_offset:
+            view_offset = eval_sh(deg = self.active_sh_degree, sh = self.get_alpha_features.transpose(1,2), dirs = dirs)
+            opacity_final = self.opacity_activation(self._opacity + LOD_offset[:,:1]+ view_offset[:,:1])
+        else:
+            opacity_final = self.opacity_activation(self._opacity + LOD_offset[:,:1])
+        scales_final = self.scaling_activation(self._scaling + LOD_offset[:,1:])
         return opacity_final, scales_final
 
     def create_from_pcd(self, pcd : BasicPointCloud, cam_infos : int, spatial_lr_scale : float):
@@ -193,7 +196,8 @@ class GaussianModel:
         features[:, :3, 0 ] = fused_color
         features[:, 3:, 1:] = 0.0
 
-        alpha_features = RGB2SH(0.1*torch.ones((fused_color.shape[0], 4, (self.max_sh_degree + 1) ** 2)).float().cuda())
+        alpha_channel = 1
+        alpha_features = RGB2SH(0.1*torch.ones((fused_color.shape[0], alpha_channel, (self.max_sh_degree + 1) ** 2)).float().cuda())
         alpha_features[:,:,1:] = 0.0
 
         print("Number of points at initialisation : ", fused_point_cloud.shape[0])
@@ -353,11 +357,14 @@ class GaussianModel:
         features_dc[:, 1, 0] = np.asarray(plydata.elements[0]["f_dc_1"])
         features_dc[:, 2, 0] = np.asarray(plydata.elements[0]["f_dc_2"])
 
-        features_alpha_dc = np.zeros((xyz.shape[0], 4, 1))
-        features_alpha_dc[:, 0, 0] = np.asarray(plydata.elements[0]["f_alpha_dc_0"])
-        features_alpha_dc[:, 1, 0] = np.asarray(plydata.elements[0]["f_alpha_dc_1"])
-        features_alpha_dc[:, 2, 0] = np.asarray(plydata.elements[0]["f_alpha_dc_2"])
-        features_alpha_dc[:, 3, 0] = np.asarray(plydata.elements[0]["f_alpha_dc_3"])
+        alpha_channel = 1 # 4 for opacity + scales
+        features_alpha_dc = np.zeros((xyz.shape[0], alpha_channel, 1))
+        for i in range(alpha_channel):
+            features_alpha_dc[:, i, 0] = np.asarray(plydata.elements[0][f"f_alpha_dc_{i}"])
+
+        # features_alpha_dc[:, 1, 0] = np.asarray(plydata.elements[0]["f_alpha_dc_1"])
+        # features_alpha_dc[:, 2, 0] = np.asarray(plydata.elements[0]["f_alpha_dc_2"])
+        # features_alpha_dc[:, 3, 0] = np.asarray(plydata.elements[0]["f_alpha_dc_3"])
 
         extra_f_names = [p.name for p in plydata.elements[0].properties if p.name.startswith("f_rest_")]
         extra_f_names = sorted(extra_f_names, key = lambda x: int(x.split('_')[-1]))
@@ -370,12 +377,12 @@ class GaussianModel:
 
         alpha_extra_f_names = [p.name for p in plydata.elements[0].properties if p.name.startswith("f_alpha_rest_")]
         alpha_extra_f_names = sorted(alpha_extra_f_names, key = lambda x: int(x.split('_')[-1]))
-        assert len(alpha_extra_f_names)==4*(self.max_sh_degree + 1) ** 2 - 4
+        assert len(alpha_extra_f_names)==alpha_channel*(self.max_sh_degree + 1) ** 2 - alpha_channel
         alpha_features_extra = np.zeros((xyz.shape[0], len(alpha_extra_f_names)))
         for idx, attr_name in enumerate(alpha_extra_f_names):
             alpha_features_extra[:, idx] = np.asarray(plydata.elements[0][attr_name])
         # Reshape (P,F*SH_coeffs) to (P, F, SH_coeffs except DC)
-        alpha_features_extra = alpha_features_extra.reshape((alpha_features_extra.shape[0], 4, (self.max_sh_degree + 1) ** 2 - 1))
+        alpha_features_extra = alpha_features_extra.reshape((alpha_features_extra.shape[0], alpha_channel, (self.max_sh_degree + 1) ** 2 - 1))
 
         scale_names = [p.name for p in plydata.elements[0].properties if p.name.startswith("scale_")]
         scale_names = sorted(scale_names, key = lambda x: int(x.split('_')[-1]))
