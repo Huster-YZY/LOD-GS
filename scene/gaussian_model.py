@@ -467,6 +467,24 @@ class GaussianModel:
         self.denom = self.denom[valid_points_mask]
         self.max_radii2D = self.max_radii2D[valid_points_mask]
         self.tmp_radii = self.tmp_radii[valid_points_mask]
+    
+    def geometry_prune(self, mask):
+        valid_points_mask = ~mask
+
+        self._xyz = self._xyz[valid_points_mask]
+        self._features_dc = self._features_dc[valid_points_mask]
+        self._features_rest = self._features_rest[valid_points_mask]
+        self._alpha_features_dc = self._alpha_features_dc[valid_points_mask]
+        self._alpha_features_rest = self._alpha_features_rest[valid_points_mask]
+        self._opacity = self._opacity[valid_points_mask]
+        self._scaling = self._scaling[valid_points_mask]
+        self._rotation = self._rotation[valid_points_mask]
+        self._coefs = self._coefs[valid_points_mask]
+
+        # self.xyz_gradient_accum = self.xyz_gradient_accum[valid_points_mask]
+        # self.denom = self.denom[valid_points_mask]
+        # self.max_radii2D = self.max_radii2D[valid_points_mask]
+        # self.tmp_radii = self.tmp_radii[valid_points_mask]
 
     def cat_tensors_to_optimizer(self, tensors_dict):
         optimizable_tensors = {}
