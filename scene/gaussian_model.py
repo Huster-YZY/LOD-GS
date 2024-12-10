@@ -187,6 +187,7 @@ class GaussianModel:
             opacity_final = self.opacity_activation(self._opacity + LOD_offset[:,:1])
         scales_final = self.scaling_activation(self._scaling + LOD_offset[:,1:])
         return opacity_final, scales_final
+        # return self.opacity_activation(self._opacity), self.scaling_activation(self._scaling)
 
     def create_from_pcd(self, pcd : BasicPointCloud, cam_infos : int, spatial_lr_scale : float):
         self.spatial_lr_scale = spatial_lr_scale

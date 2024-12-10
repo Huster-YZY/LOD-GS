@@ -2,6 +2,7 @@
 *.zip
 *.txt
 *.ply
+*.sh
 SIBR_viewers/src/
 .vscode
 output
