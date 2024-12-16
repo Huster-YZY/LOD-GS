@@ -26,7 +26,7 @@ def readImages(renders_dir, gt_dir, masks_dir):
     gts = []
     masks = []
     image_names = []
-    for fname in os.listdir(renders_dir):
+    for fname in sorted(os.listdir(renders_dir)):
         render = Image.open(renders_dir / fname)
         gt = Image.open(gt_dir / fname)
         mask = Image.open(masks_dir/fname)
@@ -186,10 +186,10 @@ def evaluate_res(model_paths, mid_point):
                                                         "PSNR": torch.tensor(psnrs).mean().item(),
                                                         "Masked PSNR": torch.tensor(psnr_masks).mean().item(),
                                                         "LPIPS": torch.tensor(lpipss).mean().item()})
-                per_view_dict[scene_dir][method].update({"SSIM": {name: ssim for ssim, name in zip(torch.tensor(ssims).tolist(), image_names)},
-                                                            "PSNR": {name: psnr for psnr, name in zip(torch.tensor(psnrs).tolist(), image_names)},
-                                                            "Masked PSNR": {name: psnr for psnr, name in zip(torch.tensor(psnr_masks).tolist(), image_names)},
-                                                            "LPIPS": {name: lp for lp, name in zip(torch.tensor(lpipss).tolist(), image_names)}})
+                per_view_dict[scene_dir][method].update({"SSIM": {name: ssim for ssim, name in zip(torch.tensor(ssims).tolist(), image_names[mid_point: len(renders)])},
+                                                            "PSNR": {name: psnr for psnr, name in zip(torch.tensor(psnrs).tolist(), image_names[mid_point: len(renders)])},
+                                                            "Masked PSNR": {name: psnr for psnr, name in zip(torch.tensor(psnr_masks).tolist(), image_names[mid_point: len(renders)])},
+                                                            "LPIPS": {name: lp for lp, name in zip(torch.tensor(lpipss).tolist(), image_names[mid_point: len(renders)])}})
 
                 with open(scene_dir + "/results_fine.json", 'w') as fp:
                     json.dump(full_dict[scene_dir], fp, indent=True)
@@ -206,5 +206,5 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Training script parameters")
     parser.add_argument('--model_paths', '-m', required=True, nargs="+", type=str, default=[])
     args = parser.parse_args()
-    evaluate(args.model_paths)
-    # evaluate_res(args.model_paths, 20)
+    # evaluate(args.model_paths)
+    evaluate_res(args.model_paths, 20)

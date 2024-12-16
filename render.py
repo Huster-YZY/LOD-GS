@@ -45,8 +45,10 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
         res = render(view, gaussians, pipeline, background, use_trained_exp=train_test_exp, separate_sh=separate_sh)
         rendering, depth = res["render"], res["depth"]
         gt = view.original_image[0:3, :, :]
-        mask = view.psnr_mask
-
+        try:
+            mask = view.psnr_mask
+        except:
+            mask = torch.ones_like(depth)
         # rendering *= view.alpha_mask
 
         if args.train_test_exp:
