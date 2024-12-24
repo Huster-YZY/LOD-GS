@@ -164,12 +164,12 @@ class GaussianModel:
         if self.active_sh_degree < self.max_sh_degree:
             self.active_sh_degree += 1
 
-    def LOD_offset(self, points_depths):
+    def LOD_offset(self, points_sample_interval):
         ch_num = self.args.ch_num
         basis_num = self.args.curve_num
         N = len(self._xyz)
 
-        depths = points_depths.view(N ,1 ,1 ,1)
+        depths = points_sample_interval.view(N ,1 ,1 ,1)
         coefs = self._coefs.reshape(N, ch_num, 3 , basis_num).contiguous() 
         # coefs = torch.zeros((N, ch_num, 3 , basis_num), device="cuda") #for test
 
@@ -178,8 +178,8 @@ class GaussianModel:
         gaussian =  torch.exp(-exponent**2)         
         return (gaussian*weight).sum(-1).squeeze(-1)
 
-    def LOD_control(self, points_depths, dirs, use_view_offset = True):
-        LOD_offset = self.LOD_offset(points_depths)
+    def LOD_control(self, points_sample_interval, dirs, use_view_offset = True):
+        LOD_offset = self.LOD_offset(points_sample_interval)
         if use_view_offset:
             view_offset = eval_sh(deg = self.active_sh_degree, sh = self.get_alpha_features.transpose(1,2), dirs = dirs)
             opacity_final = self.opacity_activation(self._opacity + LOD_offset[:,:1]+ view_offset[:,:1])

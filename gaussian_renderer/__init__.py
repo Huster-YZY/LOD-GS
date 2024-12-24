@@ -89,9 +89,10 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     #TODO: opacity LOD control
     if LOD:
         _, pt_depths = get_gt_depths(means3D, raster_settings.viewmatrix, raster_settings.projmatrix)
+        pt_sample_interval = pt_depths/viewpoint_camera.focal_x
         dir_pp = (pc.get_xyz - viewpoint_camera.camera_center.repeat(pc.get_features.shape[0], 1))
         dir_pp_normalized = dir_pp/dir_pp.norm(dim=1, keepdim=True)
-        opacity_final, scales_final = pc.LOD_control(pt_depths, dir_pp_normalized)
+        opacity_final, scales_final = pc.LOD_control(pt_sample_interval, dir_pp_normalized)
     else:
         opacity_final = pc.get_opacity
         scales_final = scales
