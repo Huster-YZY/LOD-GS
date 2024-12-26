@@ -138,7 +138,7 @@ class GMMParams(ParamGroup):
         self.timenet_output = 32
         self.bounds = 1.6  
 
-        self.ch_num = 1 + 3
+        self.ch_num = 1 + 3 + 3 #opacity + scales + colors
         self.curve_num = 10
         self.init_param = 0.01
         

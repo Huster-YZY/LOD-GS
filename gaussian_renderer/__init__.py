@@ -90,12 +90,14 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     if LOD:
         _, pt_depths = get_gt_depths(means3D, raster_settings.viewmatrix, raster_settings.projmatrix)
         pt_sample_interval = pt_depths/viewpoint_camera.focal_x
-        dir_pp = (pc.get_xyz - viewpoint_camera.camera_center.repeat(pc.get_features.shape[0], 1))
-        dir_pp_normalized = dir_pp/dir_pp.norm(dim=1, keepdim=True)
-        opacity_final, scales_final = pc.LOD_control(pt_sample_interval, dir_pp_normalized)
+        # dir_pp = (pc.get_xyz - viewpoint_camera.camera_center.repeat(pc.get_features.shape[0], 1))
+        # dir_pp_normalized = dir_pp/dir_pp.norm(dim=1, keepdim=True)
+        opacity_final, scales_final, color_residual = pc.LOD_control(pt_sample_interval)
+        colors_precomp_final = colors_precomp + color_residual
     else:
         opacity_final = pc.get_opacity
         scales_final = scales
+        colors_precomp_final = colors_precomp
 
     # Rasterize visible Gaussians to image, obtain their radii (on screen). 
     if separate_sh:
@@ -114,7 +116,7 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
             means3D = means3D,
             means2D = means2D,
             shs = shs,
-            colors_precomp = colors_precomp,
+            colors_precomp = colors_precomp_final,
             opacities = opacity_final,
             scales = scales_final,
             rotations = rotations,
