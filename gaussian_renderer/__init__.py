@@ -71,6 +71,7 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     # from SHs in Python, do it. If not, then SH -> RGB conversion will be done by rasterizer.
     shs = None
     colors_precomp = None
+    colors_residual = None
     if override_color is None:
         if pipe.convert_SHs_python:
             shs_view = pc.get_features.transpose(1, 2).view(-1, 3, (pc.max_sh_degree+1)**2)
@@ -92,12 +93,13 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
         pt_sample_interval = pt_depths/viewpoint_camera.focal_x
         # dir_pp = (pc.get_xyz - viewpoint_camera.camera_center.repeat(pc.get_features.shape[0], 1))
         # dir_pp_normalized = dir_pp/dir_pp.norm(dim=1, keepdim=True)
-        opacity_final, scales_final, color_residual = pc.LOD_control(pt_sample_interval)
-        colors_precomp_final = colors_precomp + color_residual
+        opacity_final, scales_final, colors_residual = pc.LOD_control(pt_sample_interval)
+        # print(scales_final.shape) #[3000, 3]
+        # print(color_residual.shape)
+        # exit(-1)
     else:
         opacity_final = pc.get_opacity
         scales_final = scales
-        colors_precomp_final = colors_precomp
 
     # Rasterize visible Gaussians to image, obtain their radii (on screen). 
     if separate_sh:
@@ -110,17 +112,19 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
             opacities = opacity_final,
             scales = scales_final,
             rotations = rotations,
-            cov3D_precomp = cov3D_precomp)
+            cov3D_precomp = cov3D_precomp,
+            colors_residual = colors_residual)
     else:
         rendered_image, radii, depth_image = rasterizer(
             means3D = means3D,
             means2D = means2D,
             shs = shs,
-            colors_precomp = colors_precomp_final,
+            colors_precomp = colors_precomp,
             opacities = opacity_final,
             scales = scales_final,
             rotations = rotations,
-            cov3D_precomp = cov3D_precomp)
+            cov3D_precomp = cov3D_precomp,
+            colors_residual = colors_residual)
         
     # Apply exposure to rendered image (training only)
     if use_trained_exp:

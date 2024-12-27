@@ -109,7 +109,7 @@ def training(dataset, gmm_args, opt, pipe, testing_iterations, saving_iterations
 
         bg = torch.rand((3), device="cuda") if opt.random_background else background
 
-        LOD_tuning_iteration = 7000
+        LOD_tuning_iteration = 7000 #attentation! tune this parameter carefully
         USE_LOD = True
         if iteration <= LOD_tuning_iteration:
             USE_LOD = False
