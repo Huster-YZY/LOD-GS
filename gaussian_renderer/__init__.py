@@ -91,6 +91,9 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     if LOD:
         _, pt_depths = get_gt_depths(means3D, raster_settings.viewmatrix, raster_settings.projmatrix)
         pt_sample_interval = pt_depths/viewpoint_camera.focal_x
+        # print(pt_depths.max(), pt_depths.min())
+        # print(viewpoint_camera.focal_x)
+        # print(pt_sample_interval.max(), pt_sample_interval.min())
         # dir_pp = (pc.get_xyz - viewpoint_camera.camera_center.repeat(pc.get_features.shape[0], 1))
         # dir_pp_normalized = dir_pp/dir_pp.norm(dim=1, keepdim=True)
         opacity_final, scales_final, colors_residual = pc.LOD_control(pt_sample_interval)

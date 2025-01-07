@@ -364,10 +364,10 @@ def readMultiScaleNerfSyntheticInfo(path, white_background, eval, load_allres=Fa
     test_cam_infos = readMultiScale(path, white_background, "test", only_highres=False)
     print("number of testing images:", len(test_cam_infos))
 
-    if not eval:
-        print("adding test cameras to training")
-        train_cam_infos.extend(test_cam_infos)
-        test_cam_infos = []
+    # if not eval:
+    #     print("adding test cameras to training")
+    #     train_cam_infos.extend(test_cam_infos)
+    #     test_cam_infos = []
 
     nerf_normalization = getNerfppNorm(train_cam_infos)
 

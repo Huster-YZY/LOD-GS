@@ -71,6 +71,11 @@ def training(dataset, gmm_args, opt, pipe, testing_iterations, saving_iterations
 
     progress_bar = tqdm(range(first_iter, opt.iterations), desc="Training progress")
     first_iter += 1
+
+    LOD_tuning_iteration = 7000
+    iterative_training_round = 1000
+    iterative_training_flag = False
+
     for iteration in range(first_iter, opt.iterations + 1):
         if network_gui.conn == None:
             network_gui.try_connect()
@@ -109,10 +114,14 @@ def training(dataset, gmm_args, opt, pipe, testing_iterations, saving_iterations
 
         bg = torch.rand((3), device="cuda") if opt.random_background else background
 
-        LOD_tuning_iteration = 7000 #attentation! tune this parameter carefully
         USE_LOD = True
+
         if iteration <= LOD_tuning_iteration:
             USE_LOD = False
+        # if USE_LOD and iteration % iterative_training_round == 0 :
+        #     iterative_training_flag = not iterative_training_flag
+        #     gaussians.freeze_param(iterative_training_flag)
+
         render_pkg = render(viewpoint_cam, gaussians, pipe, bg, use_trained_exp=dataset.train_test_exp, separate_sh=SPARSE_ADAM_AVAILABLE, LOD = USE_LOD)
         image, viewspace_point_tensor, visibility_filter, radii = render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"]
 
@@ -167,7 +176,7 @@ def training(dataset, gmm_args, opt, pipe, testing_iterations, saving_iterations
             ema_Ll1depth_for_log = 0.4 * Ll1depth + 0.6 * ema_Ll1depth_for_log
 
             if iteration % 10 == 0:
-                progress_bar.set_postfix({"Loss": f"{ema_loss_for_log:.{7}f}", "Depth Loss": f"{ema_Ll1depth_for_log:.{7}f}", "Gaussian Number":len(gaussians._xyz)})
+                progress_bar.set_postfix({"Loss": f"{ema_loss_for_log:.{7}f}", "Gaussian Number":len(gaussians._xyz)})
                 progress_bar.update(10)
             if iteration == opt.iterations:
                 progress_bar.close()
@@ -249,8 +258,8 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
                     image = torch.clamp(renderFunc(viewpoint, scene.gaussians, **renderArgs)["render"], 0.0, 1.0)
                     gt_image = torch.clamp(viewpoint.original_image.to("cuda"), 0.0, 1.0)
 
-                    torchvision.utils.save_image(image, os.path.join('./output/report/renders', '{0:05d}'.format(idx) + ".png"))
-                    torchvision.utils.save_image(gt_image, os.path.join('./output/report/gt', '{0:05d}'.format(idx) + ".png"))
+                    # torchvision.utils.save_image(image, os.path.join('./output/report/renders', '{0:05d}'.format(idx) + ".png"))
+                    # torchvision.utils.save_image(gt_image, os.path.join('./output/report/gt', '{0:05d}'.format(idx) + ".png"))
 
                     if train_test_exp:
                         image = image[..., image.shape[-1] // 2:]

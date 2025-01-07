@@ -170,7 +170,7 @@ class GaussianModel:
         return opacity_final, scales_final, color_residual
         # return self.opacity_activation(self._opacity), self.scaling_activation(self._scaling)
 
-    def create_from_pcd(self, pcd : BasicPointCloud, cam_infos : int, spatial_lr_scale : float):
+    def create_from_pcd(self, pcd : BasicPointCloud, cam_infos : int, spatial_lr_scale : float, focal_x: float):
         self.spatial_lr_scale = spatial_lr_scale
         fused_point_cloud = torch.tensor(np.asarray(pcd.points)).float().cuda()
         fused_color = RGB2SH(torch.tensor(np.asarray(pcd.colors)).float().cuda())
@@ -187,7 +187,7 @@ class GaussianModel:
 
         N = fused_point_cloud.shape[0]
         weight_coefs = torch.zeros((N, self.args.ch_num, self.args.curve_num))
-        position_coefs = torch.zeros((N, self.args.ch_num, self.args.curve_num)) + torch.linspace(0,20,self.args.curve_num) #@Zhenya: 20 is better :)
+        position_coefs = torch.zeros((N, self.args.ch_num, self.args.curve_num)) + torch.linspace(0, 10.0/focal_x, self.args.curve_num) #@Zhenya
         shape_coefs = torch.zeros((N, self.args.ch_num, self.args.curve_num)) + self.args.init_param
         _coefs = torch.stack((weight_coefs, position_coefs, shape_coefs), dim=2).reshape(N,-1).float().to("cuda")
         self._coefs = nn.Parameter(_coefs.requires_grad_(True))
@@ -205,6 +205,13 @@ class GaussianModel:
         self.pretrained_exposures = None
         exposure = torch.eye(3, 4, device="cuda")[None].repeat(len(cam_infos), 1, 1)
         self._exposure = nn.Parameter(exposure.requires_grad_(True))
+
+    def freeze_param(self, flag = False):
+        for param_group in self.optimizer.param_groups:
+            if param_group["name"] == "coefs":
+                param_group['params'][0].requires_grad = flag
+            else:
+                param_group['params'][0].requires_grad = not flag
 
     def training_setup(self, training_args):
         self.percent_dense = training_args.percent_dense
