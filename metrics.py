@@ -206,6 +206,11 @@ def evaluate_multilevel(model_paths, mid_point, mid_p2):
                 masks_dir = method_dir / "masks"
                 renders, gts, masks, image_names = readImages(renders_dir, gt_dir, masks_dir)
 
+                # special branch for "material" and "ship"
+                if len(renders) < 200:
+                    mid_point = 20
+                    mid_p2 = 40
+
                 ssims = []
                 psnrs = []
                 lpipss = []
@@ -317,6 +322,6 @@ if __name__ == "__main__":
         evaluate(args.model_paths)
         evaluate_multires(args.model_paths)
     else:
-        evaluate(args.model_paths)
+        # evaluate(args.model_paths)
         evaluate_multilevel(args.model_paths, 200, 220)
     

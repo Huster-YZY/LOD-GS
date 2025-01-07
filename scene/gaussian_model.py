@@ -187,7 +187,7 @@ class GaussianModel:
 
         N = fused_point_cloud.shape[0]
         weight_coefs = torch.zeros((N, self.args.ch_num, self.args.curve_num))
-        position_coefs = torch.zeros((N, self.args.ch_num, self.args.curve_num)) + torch.linspace(0, 10.0/focal_x, self.args.curve_num) #@Zhenya
+        position_coefs = torch.zeros((N, self.args.ch_num, self.args.curve_num)) + torch.linspace(0, 15.0/focal_x, self.args.curve_num) #@Zhenya
         shape_coefs = torch.zeros((N, self.args.ch_num, self.args.curve_num)) + self.args.init_param
         _coefs = torch.stack((weight_coefs, position_coefs, shape_coefs), dim=2).reshape(N,-1).float().to("cuda")
         self._coefs = nn.Parameter(_coefs.requires_grad_(True))

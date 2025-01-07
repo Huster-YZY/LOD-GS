@@ -291,8 +291,8 @@ def readNerfSyntheticInfo(path, white_background, depths, eval, extension=".png"
         print(f"Generating random point cloud ({num_pts})...")
         
         # We create random points inside the bounds of the synthetic Blender scenes
-        # xyz = np.random.random((num_pts, 3)) * 2.6 - 1.3
-        xyz = np.random.random((num_pts, 3)) * 4 -2 #customed vhp scenes scales
+        xyz = np.random.random((num_pts, 3)) * 2.0 - 1.0
+        # xyz = np.random.random((num_pts, 3)) * 4 -2 #customed vhp scenes scales
         shs = np.random.random((num_pts, 3)) / 255.0
         pcd = BasicPointCloud(points=xyz, colors=SH2RGB(shs), normals=np.zeros((num_pts, 3)))
 
