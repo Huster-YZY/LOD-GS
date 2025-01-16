@@ -115,9 +115,9 @@ def training(dataset, gmm_args, opt, pipe, testing_iterations, saving_iterations
         bg = torch.rand((3), device="cuda") if opt.random_background else background
 
         USE_LOD = True
-
         if iteration <= LOD_tuning_iteration:
             USE_LOD = False
+
         # if USE_LOD and iteration % iterative_training_round == 0 :
         #     iterative_training_flag = not iterative_training_flag
         #     gaussians.freeze_param(iterative_training_flag)
