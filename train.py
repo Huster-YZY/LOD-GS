@@ -215,6 +215,8 @@ def training(dataset, gmm_args, opt, pipe, testing_iterations, saving_iterations
             if (iteration in checkpoint_iterations):
                 print("\n[ITER {}] Saving Checkpoint".format(iteration))
                 torch.save((gaussians.capture(), iteration), scene.model_path + "/chkpnt" + str(iteration) + ".pth")
+        
+        torch.cuda.empty_cache()
 
 def prepare_output_and_logger(args):    
     if not args.model_path:
@@ -294,7 +296,7 @@ if __name__ == "__main__":
     parser.add_argument('--debug_from', type=int, default=-1)
     parser.add_argument('--detect_anomaly', action='store_true', default=False)
     parser.add_argument("--test_iterations", nargs="+", type=int, default=[7_000, 15_000, 23_000, 30_000])
-    parser.add_argument("--save_iterations", nargs="+", type=int, default=[7_000, 15_000, 23_000, 30_000])
+    parser.add_argument("--save_iterations", nargs="+", type=int, default=[30_000])
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument('--disable_viewer', action='store_true', default=False)
     parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[])

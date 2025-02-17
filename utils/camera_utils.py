@@ -40,8 +40,17 @@ def loadCam(args, id, cam_info, resolution_scale, is_nerf_synthetic, is_test_dat
         invdepthmap = None
         
     orig_w, orig_h = image.size
-    if args.resolution in [1, 2, 4, 8]:
-        resolution = round(orig_w/(resolution_scale * args.resolution)), round(orig_h/(resolution_scale * args.resolution))
+    if args.resolution > 0:
+        # print("###################Has been modified for 360 multi-scale training##########################")
+        cam_list = []
+        for r in [8, 16, 32]: #forgive me for the very limited GPU resource :(
+            resolution = round(orig_w/(resolution_scale * r)), round(orig_h/(resolution_scale * r))
+            cam_list.append(Camera(resolution, colmap_id=cam_info.uid, R=cam_info.R, T=cam_info.T, 
+                                    FoVx=cam_info.FovX, FoVy=cam_info.FovY, depth_params=cam_info.depth_params,
+                                    image=image, invdepthmap=invdepthmap,
+                                    image_name=cam_info.image_name, uid=id, data_device=args.data_device,
+                                    train_test_exp=args.train_test_exp, is_test_dataset=is_test_dataset, is_test_view=cam_info.is_test, white_background=args.white_background))
+        return cam_list
     else:  # should be a type that converts to float
         if args.resolution == -1:
             if orig_w > 1600:
@@ -70,7 +79,10 @@ def cameraList_from_camInfos(cam_infos, resolution_scale, args, is_nerf_syntheti
     camera_list = []
 
     for id, c in enumerate(cam_infos):
-        camera_list.append(loadCam(args, id, c, resolution_scale, is_nerf_synthetic, is_test_dataset))
+        if is_nerf_synthetic:
+            camera_list.append(loadCam(args, id, c, resolution_scale, is_nerf_synthetic, is_test_dataset))
+        else:
+            camera_list += loadCam(args, id, c, resolution_scale, is_nerf_synthetic, is_test_dataset)
 
     return camera_list
 

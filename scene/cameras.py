@@ -40,16 +40,17 @@ class Camera(nn.Module):
             self.data_device = torch.device("cuda")
 
         resized_image_rgb = PILtoTorch(image, resolution)
-        gt_image = resized_image_rgb[:3, ...].to(self.data_device)
+        gt_image = resized_image_rgb[:3, ...]
         self.alpha_mask = None
+
         if resized_image_rgb.shape[0] == 4:
-            self.alpha_mask = resized_image_rgb[3:4, ...].to(self.data_device)
+            self.alpha_mask = resized_image_rgb[3:4, ...]
             bg_color = [1, 1, 1] if white_background else [0, 0, 0]
-            background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
+            background = torch.tensor(bg_color, dtype=torch.float32)
             gt_image = gt_image * self.alpha_mask + background.view(3,1,1) * (1 - self.alpha_mask)
-            self.psnr_mask = (self.alpha_mask > 0).float().to("cuda")
+            self.psnr_mask = (self.alpha_mask > 0).float()
         else: 
-            self.alpha_mask = torch.ones_like(resized_image_rgb[0:1, ...].to(self.data_device))
+            self.alpha_mask = torch.ones_like(resized_image_rgb[0:1, ...])
 
         if train_test_exp and is_test_view:
             if is_test_dataset:
@@ -57,7 +58,7 @@ class Camera(nn.Module):
             else:
                 self.alpha_mask[..., self.alpha_mask.shape[-1] // 2:] = 0
 
-        self.original_image = gt_image.clamp(0.0, 1.0).to(self.data_device)
+        self.original_image = gt_image.clamp(0.0, 1.0)
         self.image_width = self.original_image.shape[2]
         self.image_height = self.original_image.shape[1]
 
@@ -79,7 +80,7 @@ class Camera(nn.Module):
 
             if self.invdepthmap.ndim != 2:
                 self.invdepthmap = self.invdepthmap[..., 0]
-            self.invdepthmap = torch.from_numpy(self.invdepthmap[None]).to(self.data_device)
+            self.invdepthmap = torch.from_numpy(self.invdepthmap[None])
 
         self.zfar = 100.0
         self.znear = 0.01

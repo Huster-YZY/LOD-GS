@@ -140,7 +140,7 @@ class GMMParams(ParamGroup):
         self.bounds = 1.6  
 
         self.ch_num = 1 + 3 + 3 #opacity + scales + colors
-        self.curve_num = 20
+        self.curve_num = 8#20
         self.init_param = 0.005
         
         super().__init__(parser, "GMMParams")
