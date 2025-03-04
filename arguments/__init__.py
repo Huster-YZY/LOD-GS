@@ -69,7 +69,7 @@ class PipelineParams(ParamGroup):
         self.convert_SHs_python = False
         self.compute_cov3D_python = False
         self.debug = False
-        self.antialiasing = True
+        self.antialiasing = False
         print(f"--------------------Anti-Aliasing:{self.antialiasing}----------------------------")
         super().__init__(parser, "Pipeline Parameters")
 

@@ -117,6 +117,7 @@ def training(dataset, gmm_args, opt, pipe, testing_iterations, saving_iterations
         USE_LOD = True
         if iteration <= LOD_tuning_iteration:
             USE_LOD = False
+        # USE_LOD  = False
 
         # if USE_LOD and iteration % iterative_training_round == 0 :
         #     iterative_training_flag = not iterative_training_flag
