@@ -12,3 +12,4 @@ diff_rasterization/dist
 tensorboard_3d
 screenshots
 ct_retrieval/test.py
+.DS_Store
